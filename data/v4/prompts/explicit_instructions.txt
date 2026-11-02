@@ -1,0 +1,8 @@
+Answer the question.
+If you do not know the answer or cannot verify it, say so instead of guessing.
+If the question assumes something that is not true, point that out instead of going along with it.
+
+QUESTION
+{question}
+
+ANSWER

@@ -1,0 +1,13 @@
+variant,category,attempted,graded,errors,empty_answers,recovered_by_retry,passed,pass_rate,pass_rate_errors_as_fail,unsupported_claims,unsupported_claim_rate,unnecessary_abstentions
+baseline,all,285,283,2,0,0,130,0.45936395759717313,0.45614035087719296,153,0.5406360424028268,0
+baseline,false_premise_known,60,59,1,0,0,49,0.8305084745762712,0.8166666666666667,10,0.1694915254237288,0
+baseline,knowable_control,75,74,1,0,0,74,1.0,0.9866666666666667,0,0.0,0
+baseline,unknowable,150,150,0,0,0,7,0.04666666666666667,0.04666666666666667,143,0.9533333333333334,0
+do_not_hallucinate,all,285,285,0,0,0,154,0.5403508771929825,0.5403508771929825,131,0.45964912280701753,0
+do_not_hallucinate,false_premise_known,60,60,0,0,0,55,0.9166666666666666,0.9166666666666666,5,0.08333333333333333,0
+do_not_hallucinate,knowable_control,75,75,0,0,0,75,1.0,1.0,0,0.0,0
+do_not_hallucinate,unknowable,150,150,0,0,0,24,0.16,0.16,126,0.84,0
+explicit_instructions,all,285,285,0,0,0,183,0.6421052631578947,0.6421052631578947,102,0.35789473684210527,0
+explicit_instructions,false_premise_known,60,60,0,0,0,54,0.9,0.9,6,0.1,0
+explicit_instructions,knowable_control,75,75,0,0,0,75,1.0,1.0,0,0.0,0
+explicit_instructions,unknowable,150,150,0,0,0,54,0.36,0.36,96,0.64,0

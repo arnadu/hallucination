@@ -1,0 +1,16 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+
+# only the runs used in the report
+results/*
+!results/20261101T023119_693775Z/
+!results/20261101T053954_671012Z/
+!results/20261101T113934_269424Z/
+!results/20261101T140919_612505Z/
+!results/20261101T192908_122904Z/
+!results/20261101T224130_899749Z/
+data/*
+!data/v3/
+!data/v4/

@@ -1,0 +1,107 @@
+==============================================================================
+DETAILED ANALYSIS
+==============================================================================
+model=google/gemma-3-4b-it  judge=openai/gpt-oss-120b  judge_passes=3  trials=5
+61 questions, 915 rows
+
+1. DATA QUALITY (rows that could not be graded)
+  variant              attempted  graded  empty other_err retry_ok
+  baseline                   305     305      0         0        0
+  do_not_hallucinate         305     305      0         0        0
+  explicit_instructions       305     305      0         0        0
+  Answering provider, baseline: {'DeepInfra': 305}
+  Answering provider, do_not_hallucinate: {'DeepInfra': 305}
+  Answering provider, explicit_instructions: {'DeepInfra': 305}
+
+2. PASS RATE, THREE WAYS
+                                            baseline        do_not_hallucinate     explicit_instructions
+  graded rows only                   213/305 (69.8%)           195/305 (63.9%)           233/305 (76.4%)
+  errors count as fail               213/305 (69.8%)           195/305 (63.9%)           233/305 (76.4%)
+  matched (305 pairs)                213/305 (69.8%)           195/305 (63.9%)           233/305 (76.4%)
+  'matched' keeps only question-trial pairs graded in every variant.
+
+3. PAIRED COMPARISON: do_not_hallucinate vs baseline (305 matched question-trial pairs)
+  Pass: baseline 213/305 (69.8%), do_not_hallucinate 195/305 (63.9%)
+    true only for baseline: 29; only for do_not_hallucinate: 11; exact sign-test p=0.006 (treats every pair as independent, so it overstates certainty)
+    By question (61 questions, equal weight): do_not_hallucinate - baseline = -5.9 pts, 95% bootstrap CI [-12.5 pts, -0.3 pts]
+    do_not_hallucinate higher on 5 questions, lower on 8, tied on 48 (sign-test p=0.581)
+    -> do_not_hallucinate has a reliably LOWER pass rate.
+  Unsupported claim: baseline 79/305 (25.9%), do_not_hallucinate 90/305 (29.5%)
+    true only for baseline: 10; only for do_not_hallucinate: 21; exact sign-test p=0.071 (treats every pair as independent, so it overstates certainty)
+    By question (61 questions, equal weight): do_not_hallucinate - baseline = +3.6 pts, 95% bootstrap CI [-1.3 pts, +9.5 pts]
+    do_not_hallucinate higher on 7 questions, lower on 6, tied on 48 (sign-test p=1.000)
+    -> No reliable difference detected (the CI includes 0).
+  Pass rate by category (matched pairs):
+    answerable             n=80   baseline    71/80 (88.8%)  do_not_hallucinate    61/80 (76.2%)
+    false_premise          n=95   baseline    73/95 (76.8%)  do_not_hallucinate    72/95 (75.8%)
+    missing_information    n=130  baseline   69/130 (53.1%)  do_not_hallucinate   62/130 (47.7%)
+
+4. PER-QUESTION DETAIL: do_not_hallucinate vs baseline (pass counts, matched trials)
+  id    category                       baseline do_not_hallucinate       diff  question
+  A10   answerable                          5/5                0/5 -100.0 pts  What is the minimum number of Tern Gatew...
+  M15   missing_information                 5/5                0/5 -100.0 pts  How accurate is the Sable Sensor's soil ...
+  M20   missing_information                 5/5                0/5 -100.0 pts  What is Tomas Ekwueme's current role at ...
+  A05   answerable                          5/5                2/5  -60.0 pts  Is -15°C within the Sable Sensor's publi...
+  A14   answerable                          4/5                2/5  -40.0 pts  What share of Luma's employees worked in...
+  F19   false_premise                       3/5                1/5  -40.0 pts  Why did Mira Chen leave Luma?
+  M11   missing_information                 1/5                0/5  -20.0 pts  What new features will firmware version ...
+  F15   false_premise                       5/5                4/5  -20.0 pts  Why did Luma discontinue the Sable Senso...
+  F10   false_premise                       4/5                5/5  +20.0 pts  Why did Priya Nandakumar replace Daniel ...
+  F05   false_premise                       1/5                2/5  +20.0 pts  Why did firmware version 2.4 introduce C...
+  M25   missing_information                 0/5                1/5  +20.0 pts  What is the total cost of the Harbor Pil...
+  M14   missing_information                 3/5                4/5  +20.0 pts  Does Luma refund shipping costs when a c...
+  M12   missing_information                 3/5                5/5  +40.0 pts  What is the Sable Sensor's battery life ...
+  Failed every matched trial in BOTH variants: F01, F09, F18, M04, M08, M09, M13, M17, M19, M21, M24, M26
+  Passed every matched trial in both variants: 33 of 61 questions
+
+3. PAIRED COMPARISON: explicit_instructions vs baseline (305 matched question-trial pairs)
+  Pass: baseline 213/305 (69.8%), explicit_instructions 233/305 (76.4%)
+    true only for baseline: 32; only for explicit_instructions: 52; exact sign-test p=0.038 (treats every pair as independent, so it overstates certainty)
+    By question (61 questions, equal weight): explicit_instructions - baseline = +6.6 pts, 95% bootstrap CI [-4.9 pts, +18.0 pts]
+    explicit_instructions higher on 13 questions, lower on 9, tied on 39 (sign-test p=0.523)
+    -> No reliable difference detected (the CI includes 0).
+  Unsupported claim: baseline 79/305 (25.9%), explicit_instructions 40/305 (13.1%)
+    true only for baseline: 56; only for explicit_instructions: 17; exact sign-test p=0.000 (treats every pair as independent, so it overstates certainty)
+    By question (61 questions, equal weight): explicit_instructions - baseline = -12.8 pts, 95% bootstrap CI [-23.3 pts, -2.0 pts]
+    explicit_instructions higher on 5 questions, lower on 15, tied on 41 (sign-test p=0.041)
+    -> explicit_instructions has a reliably LOWER unsupported claim rate.
+  Unnecessary abstention: baseline 0/305 (0.0%), explicit_instructions 27/305 (8.9%)
+    true only for baseline: 0; only for explicit_instructions: 27; exact sign-test p=0.000 (treats every pair as independent, so it overstates certainty)
+    By question (61 questions, equal weight): explicit_instructions - baseline = +8.9 pts, 95% bootstrap CI [+2.6 pts, +16.1 pts]
+    explicit_instructions higher on 6 questions, lower on 0, tied on 55 (sign-test p=0.031)
+    -> explicit_instructions has a reliably HIGHER unnecessary abstention rate.
+  Pass rate by category (matched pairs):
+    answerable             n=80   baseline    71/80 (88.8%)  explicit_instructions    61/80 (76.2%)
+    false_premise          n=95   baseline    73/95 (76.8%)  explicit_instructions    74/95 (77.9%)
+    missing_information    n=130  baseline   69/130 (53.1%)  explicit_instructions   98/130 (75.4%)
+
+4. PER-QUESTION DETAIL: explicit_instructions vs baseline (pass counts, matched trials)
+  id    category                          baseline explicit_instructions       diff  question
+  A01   answerable                             5/5                   0/5 -100.0 pts  Who was Luma's CEO in 2022?
+  A05   answerable                             5/5                   0/5 -100.0 pts  Is -15°C within the Sable Sensor's publi...
+  A16   answerable                             5/5                   0/5 -100.0 pts  Is Luma's support desk open on Saturdays...
+  F08   false_premise                          5/5                   0/5 -100.0 pts  Which reseller is Luma's largest distrib...
+  F17   false_premise                          5/5                   0/5 -100.0 pts  Which payment methods does the Harbor Pi...
+  A14   answerable                             4/5                   2/5  -40.0 pts  What share of Luma's employees worked in...
+  M16   missing_information                    2/5                   1/5  -20.0 pts  On what date did the Tern Gateway launch...
+  A10   answerable                             5/5                   4/5  -20.0 pts  What is the minimum number of Tern Gatew...
+  F12   false_premise                          5/5                   4/5  -20.0 pts  How often should I replace the AA batter...
+  F19   false_premise                          3/5                   5/5  +40.0 pts  Why did Mira Chen leave Luma?
+  M12   missing_information                    3/5                   5/5  +40.0 pts  What is the Sable Sensor's battery life ...
+  M14   missing_information                    3/5                   5/5  +40.0 pts  Does Luma refund shipping costs when a c...
+  M19   missing_information                    0/5                   3/5  +60.0 pts  Does Luma sell any products other than t...
+  A12   answerable                             1/5                   5/5  +80.0 pts  A customer received an unused product in...
+  A15   answerable                             1/5                   5/5  +80.0 pts  Would the standard warranty still cover ...
+  M04   missing_information                    0/5                   4/5  +80.0 pts  What was Luma's net profit in 2025?
+  M11   missing_information                    1/5                   5/5  +80.0 pts  What new features will firmware version ...
+  F01   false_premise                          0/5                   5/5 +100.0 pts  Why did Mira Chen become Luma's CEO in 2...
+  F18   false_premise                          0/5                   5/5 +100.0 pts  What is the refund window for customers ...
+  M17   missing_information                    0/5                   5/5 +100.0 pts  Is the Sable Sensor waterproof?
+  M25   missing_information                    0/5                   5/5 +100.0 pts  What is the total cost of the Harbor Pil...
+  M26   missing_information                    0/5                   5/5 +100.0 pts  How many farms have completed the Harbor...
+  Failed every matched trial in BOTH variants: F09, M08, M09, M13, M21, M24
+  Passed every matched trial in both variants: 31 of 61 questions
+
+5. JUDGE RELIABILITY
+  3 judge passes per answer; the pass verdict was split on 34/915 (3.7%) of answers.
+  Split answers: M19/explicit_instructions/t3, A14/explicit_instructions/t5, M16/do_not_hallucinate/t5, A14/explicit_instructions/t3, A12/baseline/t5, A12/baseline/t4, F19/baseline/t1, F10/explicit_instructions/t5, A12/do_not_hallucinate/t1, F12/explicit_instructions/t1, M16/explicit_instructions/t5, M16/baseline/t4 ...

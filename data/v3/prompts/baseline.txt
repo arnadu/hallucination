@@ -1,0 +1,9 @@
+Read the source packet and answer the question.
+
+SOURCE PACKET
+{source}
+
+QUESTION
+{question}
+
+ANSWER

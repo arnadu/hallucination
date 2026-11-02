@@ -1,0 +1,74 @@
+SOURCE PACKET: LUMA FIELD SYSTEMS
+All names, organizations, products, and events are fictional.
+
+1. Luma Field Systems was founded in 2018 by Priya Nandakumar
+and Tomas Ekwueme. Nandakumar served as CEO from 2018 until 2020.
+
+2. Daniel Ortiz was CEO from 2020 until March 15, 2023, when
+Mira Chen succeeded him. Ortiz remains a member of Luma's
+five-person board of directors.
+
+3. Luma's headquarters is in Bellwick. Its only manufacturing
+plant is in Eastmere. Luma also operates a repair depot in
+Calder Ridge.
+
+4. Luma launched its first product, the Sable Sensor, in 2021.
+Its second product, the Tern Gateway, launched in 2023.
+
+5. The Sable Sensor measures soil moisture and soil temperature.
+It does not measure air humidity.
+
+6. The Sable Sensor's published operating temperature range
+is -10°C to 45°C, inclusive. The Tern Gateway's published
+operating temperature range is -20°C to 50°C, inclusive.
+
+7. The Sable Sensor uses two AA batteries. Its standard
+package does not include batteries. The Tern Gateway is
+mains-powered and ships with a power adapter.
+
+8. The Sable Sensor's rated battery life is 9 months when it
+takes one reading every 15 minutes.
+
+9. Sable Sensors send their readings to a Tern Gateway over
+Bluetooth. One Tern Gateway can connect to up to 20 Sable
+Sensors at once.
+
+10. Luma's 2025 annual report records revenue of 8.4 million
+credits and operating expenses of 7.1 million credits. Its
+2024 annual report records revenue of 6.2 million credits.
+
+11. As of December 31, 2025, Luma employed 64 people:
+40 in engineering, 14 in sales, and 10 in administration.
+As of December 31, 2024, Luma employed 51 people.
+
+12. Luma announced the Harbor Pilot on February 10, 2026.
+The pilot is scheduled to begin on November 1, 2026,
+and end on January 31, 2027.
+
+13. The Harbor Pilot will involve 12 farms, all located within
+80 km of Bellwick. Only farms within 80 km of Bellwick are
+eligible. Participation is free. Participants must return the
+loaned sensors within 14 calendar days after the pilot ends.
+
+14. Luma's standard warranty lasts 24 months from purchase.
+It covers manufacturing defects but excludes accidental
+damage and damage caused by immersion in water. An extended
+warranty of 12 additional months is available for the Tern
+Gateway only.
+
+15. Customers can request a refund within 30 calendar days
+after delivery if the product is unused and in its
+original packaging.
+
+16. Luma sells directly to customers and does not use
+resellers or distributors.
+
+17. Luma's support desk is open Monday through Friday,
+09:00–17:00 Bellwick local time. It is closed on
+Bellwick public holidays.
+
+18. Firmware versions 2.3 and 2.4 apply to the Sable Sensor.
+Version 2.3 added CSV export. Version 2.4 fixed a Bluetooth
+reconnection bug. The Tern Gateway runs a separate firmware
+line. Firmware version 2.5 for the Sable Sensor is planned
+for release in the first quarter of 2027.

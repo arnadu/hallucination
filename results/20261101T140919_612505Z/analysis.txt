@@ -1,0 +1,76 @@
+==============================================================================
+DETAILED ANALYSIS
+==============================================================================
+model=google/gemma-4-31b-it  judge=openai/gpt-oss-120b  judge_passes=3  trials=5
+57 questions, 855 rows
+
+1. DATA QUALITY (rows that could not be graded)
+  variant              attempted  graded  empty other_err retry_ok
+  baseline                   285     284      0         1        0
+  do_not_hallucinate         285     285      0         0        0
+  explicit_instructions       285     285      0         0        0
+  Answering provider, baseline: {'DeepInfra': 92, 'ModelRun': 20, 'CoreWeave': 168, 'Novita': 3, 'Crusoe': 1, 'Venice': 1}
+  Answering provider, do_not_hallucinate: {'CoreWeave': 159, 'DeepInfra': 116, 'ModelRun': 7, 'Venice': 2, 'Novita': 1}
+  Answering provider, explicit_instructions: {'DeepInfra': 125, 'CoreWeave': 137, 'ModelRun': 14, 'Chutes': 5, 'DekaLLM': 4}
+
+2. PASS RATE, THREE WAYS
+                                            baseline        do_not_hallucinate     explicit_instructions
+  graded rows only                   254/284 (89.4%)           265/285 (93.0%)           270/285 (94.7%)
+  errors count as fail               254/285 (89.1%)           265/285 (93.0%)           270/285 (94.7%)
+  matched (284 pairs)                254/284 (89.4%)           265/284 (93.3%)           269/284 (94.7%)
+  'matched' keeps only question-trial pairs graded in every variant.
+
+3. PAIRED COMPARISON: do_not_hallucinate vs baseline (284 matched question-trial pairs)
+  Pass: baseline 254/284 (89.4%), do_not_hallucinate 265/284 (93.3%)
+    true only for baseline: 1; only for do_not_hallucinate: 12; exact sign-test p=0.003 (treats every pair as independent, so it overstates certainty)
+    By question (57 questions, equal weight): do_not_hallucinate - baseline = +3.9 pts, 95% bootstrap CI [+0.4 pts, +8.8 pts]
+    do_not_hallucinate higher on 4 questions, lower on 0, tied on 53 (sign-test p=0.125)
+    -> do_not_hallucinate has a reliably HIGHER pass rate.
+  Unsupported claim: baseline 30/284 (10.6%), do_not_hallucinate 19/284 (6.7%)
+    true only for baseline: 12; only for do_not_hallucinate: 1; exact sign-test p=0.003 (treats every pair as independent, so it overstates certainty)
+    By question (57 questions, equal weight): do_not_hallucinate - baseline = -3.9 pts, 95% bootstrap CI [-8.8 pts, -0.4 pts]
+    do_not_hallucinate higher on 0 questions, lower on 4, tied on 53 (sign-test p=0.125)
+    -> do_not_hallucinate has a reliably LOWER unsupported claim rate.
+  Pass rate by category (matched pairs):
+    false_premise_known    n=60   baseline   60/60 (100.0%)  do_not_hallucinate   60/60 (100.0%)
+    knowable_control       n=75   baseline   75/75 (100.0%)  do_not_hallucinate   75/75 (100.0%)
+    unknowable             n=149  baseline  119/149 (79.9%)  do_not_hallucinate  130/149 (87.2%)
+
+4. PER-QUESTION DETAIL: do_not_hallucinate vs baseline (pass counts, matched trials)
+  id    category                       baseline do_not_hallucinate       diff  question
+  U01   unknowable                          0/4                1/4  +25.0 pts  Who won the 2019 Halvorsen Medal for Soi...
+  U16   unknowable                          3/5                5/5  +40.0 pts  Which team won the 2008 Larkspur Cup in ...
+  U22   unknowable                          2/5                5/5  +60.0 pts  In what year did Lucia Montresor win the...
+  U21   unknowable                          0/5                5/5 +100.0 pts  What is the time complexity of the Hallw...
+  Failed every matched trial in BOTH variants: U02, U25, U28
+  Passed every matched trial in both variants: 49 of 57 questions
+
+3. PAIRED COMPARISON: explicit_instructions vs baseline (284 matched question-trial pairs)
+  Pass: baseline 254/284 (89.4%), explicit_instructions 269/284 (94.7%)
+    true only for baseline: 0; only for explicit_instructions: 15; exact sign-test p=0.000 (treats every pair as independent, so it overstates certainty)
+    By question (57 questions, equal weight): explicit_instructions - baseline = +5.6 pts, 95% bootstrap CI [+1.1 pts, +11.6 pts]
+    explicit_instructions higher on 5 questions, lower on 0, tied on 52 (sign-test p=0.062)
+    -> explicit_instructions has a reliably HIGHER pass rate.
+  Unsupported claim: baseline 30/284 (10.6%), explicit_instructions 15/284 (5.3%)
+    true only for baseline: 15; only for explicit_instructions: 0; exact sign-test p=0.000 (treats every pair as independent, so it overstates certainty)
+    By question (57 questions, equal weight): explicit_instructions - baseline = -5.6 pts, 95% bootstrap CI [-11.6 pts, -1.1 pts]
+    explicit_instructions higher on 0 questions, lower on 5, tied on 52 (sign-test p=0.062)
+    -> explicit_instructions has a reliably LOWER unsupported claim rate.
+  Pass rate by category (matched pairs):
+    false_premise_known    n=60   baseline   60/60 (100.0%)  explicit_instructions   60/60 (100.0%)
+    knowable_control       n=75   baseline   75/75 (100.0%)  explicit_instructions   75/75 (100.0%)
+    unknowable             n=149  baseline  119/149 (79.9%)  explicit_instructions  134/149 (89.9%)
+
+4. PER-QUESTION DETAIL: explicit_instructions vs baseline (pass counts, matched trials)
+  id    category                          baseline explicit_instructions       diff  question
+  U13   unknowable                             4/5                   5/5  +20.0 pts  Who was the lead singer of the band Quar...
+  U16   unknowable                             3/5                   5/5  +40.0 pts  Which team won the 2008 Larkspur Cup in ...
+  U22   unknowable                             2/5                   5/5  +60.0 pts  In what year did Lucia Montresor win the...
+  U01   unknowable                             0/4                   4/4 +100.0 pts  Who won the 2019 Halvorsen Medal for Soi...
+  U21   unknowable                             0/5                   5/5 +100.0 pts  What is the time complexity of the Hallw...
+  Failed every matched trial in BOTH variants: U02, U25, U28
+  Passed every matched trial in both variants: 49 of 57 questions
+
+5. JUDGE RELIABILITY
+  3 judge passes per answer; the pass verdict was split on 3/854 (0.4%) of answers.
+  Split answers: U13/baseline/t5, U13/baseline/t1, U13/do_not_hallucinate/t1

@@ -1,0 +1,868 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hallucination Results Explorer</title>
+<style>
+:root {
+  --bg: #fafaf9; --panel: #ffffff; --ink: #1c1917; --muted: #6b6560; --line: #e4e0da;
+  --accent: #2f5fd0; --good: #2e8b57; --bad: #c0392b; --warn: #a8731a; --chip: #f0eee9;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #161513; --panel: #1f1d1a; --ink: #ece8e1; --muted: #a39e96; --line: #34312c;
+    --accent: #7aa2ff; --good: #5cc28a; --bad: #ef7a6c; --warn: #e0b050; --chip: #2a2825;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+header { padding: 14px 20px 0; max-width: 1400px; margin: 0 auto; }
+h1 { font-size: 18px; margin: 0 0 10px; font-weight: 650; }
+h2 { font-size: 15px; margin: 26px 0 8px; font-weight: 650; }
+h3 { font-size: 13px; margin: 16px 0 6px; font-weight: 650; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+main { padding: 0 20px 60px; max-width: 1400px; margin: 0 auto; }
+.bar-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 10px; }
+button, select, input[type=text], input[type=search] {
+  font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 5px 10px;
+}
+button { cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); margin-top: 6px; flex-wrap: wrap; }
+.tab { background: none; border: none; border-bottom: 2px solid transparent; border-radius: 0; padding: 8px 14px; color: var(--muted); }
+.tab.active { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; padding: 12px 0; color: var(--muted); }
+.toolbar label { display: flex; gap: 6px; align-items: center; }
+.drop {
+  border: 2px dashed var(--line); border-radius: 12px; padding: 60px 20px; text-align: center;
+  color: var(--muted); margin-top: 30px; background: var(--panel);
+}
+.drop.over { border-color: var(--accent); color: var(--ink); }
+.drop p { margin: 6px 0; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+.card .k { color: var(--muted); font-size: 12px; }
+.card .v { font-weight: 600; word-break: break-word; }
+table { border-collapse: collapse; width: 100%; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+th, td { padding: 7px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+th { font-size: 12px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+th.sortable { cursor: pointer; }
+th.sortable:hover { color: var(--ink); }
+tr:last-child td { border-bottom: none; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.tablewrap { overflow-x: auto; border-radius: 8px; }
+.heat b { font-size: 15px; }
+.sub { display: block; color: var(--muted); font-size: 11px; font-weight: 400; }
+.minibar { height: 4px; background: var(--line); border-radius: 2px; margin-top: 4px; overflow: hidden; }
+.minibar i { display: block; height: 100%; background: var(--accent); }
+.note { color: var(--muted); font-size: 12px; margin: 6px 0; }
+.chip { display: inline-block; padding: 0 7px; border-radius: 10px; font-size: 11px; font-weight: 600; background: var(--chip); color: var(--muted); margin-right: 4px; white-space: nowrap; }
+.chip.pass { color: var(--good); } .chip.fail { color: var(--bad); }
+.chip.warn { color: var(--warn); } .chip.err { background: var(--bad); color: #fff; }
+a.lnk, .lnk { color: var(--accent); cursor: pointer; text-decoration: none; }
+.lnk:hover { text-decoration: underline; }
+.verdict { background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 6px; padding: 10px 14px; margin: 10px 0; }
+.verdict.good { border-left-color: var(--good); } .verdict.bad { border-left-color: var(--bad); }
+table.qa { table-layout: fixed; min-width: 1100px; }
+table.qa td { font-size: 13px; }
+.txt { white-space: pre-wrap; word-break: break-word; max-height: 320px; overflow-y: auto; }
+.txt.answer { background: var(--chip); border-radius: 6px; padding: 6px 8px; }
+textarea.packet { width: 100%; height: 360px; resize: vertical; font: 12px/1.5 ui-monospace, Consolas, monospace; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+.stack { display: flex; height: 28px; border-radius: 6px; overflow: hidden; background: var(--line); }
+.stack i { font-style: normal; color: #fff; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+details > summary { cursor: pointer; margin: 8px 0; }
+pre.block { white-space: pre-wrap; word-break: break-word; margin: 0; }
+pre.block { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font: 12px/1.5 ui-monospace, Consolas, monospace; }
+.answer { background: var(--chip); border-radius: 6px; padding: 8px 10px; }
+.pager { display: flex; gap: 10px; align-items: center; margin: 10px 0; color: var(--muted); }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 14px; }
+.warnbox { border: 1px solid var(--warn); color: var(--warn); border-radius: 6px; padding: 8px 12px; margin: 8px 0; }
+@media (max-width: 640px) { header, main { padding-left: 12px; padding-right: 12px; } .two { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Hallucination Results Explorer</h1>
+  <div class="bar-row">
+    <button class="primary" id="btnFolder">Open result folder…</button>
+    <button id="btnFiles">Open files…</button>
+    <select id="runSel" title="Loaded runs" hidden></select>
+    <span class="note" id="loadMsg"></span>
+  </div>
+  <input type="file" id="dirIn" webkitdirectory multiple hidden>
+  <input type="file" id="fileIn" multiple accept=".json,.jsonl" hidden>
+  <div class="tabs" id="tabs" hidden></div>
+</header>
+<main id="main"></main>
+
+<script>
+"use strict";
+
+/* ---------- small helpers ---------- */
+const $ = (s, el = document) => el.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const pct = (x, d = 1) => (x * 100).toFixed(d) + "%";
+const pts = (x, d = 1) => (x >= 0 ? "+" : "−") + Math.abs(x * 100).toFixed(d) + " pts";
+const natKey = s => String(s).replace(/\d+/g, m => m.padStart(6, "0"));
+
+const METRICS = {
+  pass:  { label: "Pass rate", short: "pass", good: true, get: r => r.pass },
+  unsup: { label: "Unsupported-claim rate", short: "unsupported claim", good: false, get: r => r.unsup },
+  abst:  { label: "Unnecessary-abstention rate", short: "unnecessary abstention", good: false, get: r => r.abst },
+};
+
+/* ---------- statistics (ported from analysis.py) ---------- */
+function wilson(k, n) {
+  if (!n) return [0, 0];
+  const z = 1.96, p = k / n, d = 1 + z * z / n, c = p + z * z / (2 * n);
+  const m = z * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n));
+  return [Math.max(0, (c - m) / d), Math.min(1, (c + m) / d)];
+}
+
+function signTestP(b, c) {
+  const n = b + c;
+  if (!n) return 1;
+  const k = Math.min(b, c);
+  const lf = [0];
+  for (let i = 1; i <= n; i++) lf[i] = lf[i - 1] + Math.log(i);
+  let tail = 0;
+  for (let i = 0; i <= k; i++) tail += Math.exp(lf[n] - lf[i] - lf[n - i] - n * Math.LN2);
+  return Math.min(1, 2 * tail);
+}
+
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+function bootstrapCI(values, resamples = 5000, seed = 0) {
+  const n = values.length;
+  if (!n) return [0, 0];
+  const rng = mulberry32(seed), means = new Float64Array(resamples);
+  for (let r = 0; r < resamples; r++) {
+    let s = 0;
+    for (let i = 0; i < n; i++) s += values[Math.floor(rng() * n)];
+    means[r] = s / n;
+  }
+  means.sort();
+  return [means[Math.floor(0.025 * resamples)], means[Math.min(resamples - 1, Math.floor(0.975 * resamples))]];
+}
+
+/* ---------- loading ---------- */
+function normRow(r) {
+  const g = r.grade || null;
+  const errType = r.error ? (r.error_type || "error") : null;
+  const graded = !!g && !r.error;
+  const runs = r.judge_runs || [];
+  const split = runs.length > 1 && new Set(runs.map(x => !!(x.grade && x.grade.pass))).size > 1;
+  return {
+    qid: r.question_id, cat: r.category, variant: r.variant, trial: r.trial,
+    question: r.question || "", gt: r.ground_truth || "", answer: r.answer ?? "",
+    provider: r.provider || "", retried: (r.empty_responses || []).length,
+    grade: g, runs, error: r.error || null, errType, graded,
+    pass: graded ? !!g.pass : null, unsup: graded ? !!g.unsupported_claim : false,
+    abst: graded ? !!g.unnecessary_abstention : false, split,
+    key: r.question_id + "|" + r.trial,
+  };
+}
+
+function buildRun(name, rawRows, meta) {
+  const rows = rawRows.map(normRow);
+  const caseIds = meta && meta.cases ? meta.cases.map(c => c.id) : [];
+  const seen = new Set(caseIds);
+  const extra = [...new Set(rows.map(r => r.qid))].filter(q => !seen.has(q)).sort((a, b) => natKey(a).localeCompare(natKey(b)));
+  const qOrder = caseIds.concat(extra);
+  const qInfo = new Map();
+  for (const r of rows) if (!qInfo.has(r.qid)) qInfo.set(r.qid, { id: r.qid, cat: r.cat, question: r.question, gt: r.gt });
+
+  let variants = [...new Set(rows.map(r => r.variant))];
+  const promptOrder = meta && meta.prompts ? Object.keys(meta.prompts) : [];
+  variants.sort((a, b) => {
+    const ia = promptOrder.indexOf(a), ib = promptOrder.indexOf(b);
+    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+  });
+  if (variants.includes("baseline")) variants = ["baseline", ...variants.filter(v => v !== "baseline")];
+
+  const cats = [...new Set(rows.map(r => r.cat))];
+  const index = new Map(variants.map(v => [v, new Map()]));
+  for (const r of rows) index.get(r.variant).set(r.key, r);
+  const qRank = new Map(qOrder.map((q, i) => [q, i]));
+  const vRank = new Map(variants.map((v, i) => [v, i]));
+  rows.sort((a, b) => (qRank.get(a.qid) - qRank.get(b.qid)) || (vRank.get(a.variant) - vRank.get(b.variant)) || (a.trial - b.trial));
+  return { name, rows, meta: meta || null, variants, cats, qOrder, qInfo, index };
+}
+
+async function loadEntries(entries) {
+  const groups = new Map();
+  for (const e of entries) {
+    const i = e.path.lastIndexOf("/");
+    const dir = i >= 0 ? e.path.slice(0, i) : "";
+    const base = e.path.slice(i + 1).toLowerCase();
+    if (base !== "answers.jsonl" && base !== "metadata.json") continue;
+    if (!groups.has(dir)) groups.set(dir, {});
+    groups.get(dir)[base] = e.file;
+  }
+  const added = [];
+  let badLines = 0;
+  for (const [dir, g] of groups) {
+    if (!g["answers.jsonl"]) continue;
+    const text = await g["answers.jsonl"].text();
+    const raw = [];
+    for (const line of text.split(/\r?\n/)) {
+      if (!line.trim()) continue;
+      try { raw.push(JSON.parse(line)); } catch (e) { badLines++; }
+    }
+    let meta = null;
+    if (g["metadata.json"]) {
+      try { meta = JSON.parse(await g["metadata.json"].text()); } catch (e) { meta = null; }
+    }
+    let name = dir ? dir.split("/").pop() : "answers.jsonl";
+    if (state.runs.some(r => r.name === name)) name += " (" + (state.runs.length + added.length + 1) + ")";
+    added.push(buildRun(name, raw, meta));
+  }
+  if (!added.length) { setMsg("No answers.jsonl found in what you selected."); return; }
+  state.runs.push(...added);
+  state.runIdx = state.runs.length - added.length;
+  resetFilters();
+  setMsg(added.length + " run(s) loaded" + (badLines ? "; " + badLines + " unreadable line(s) skipped" : "") + ".");
+  render();
+}
+
+const WANTED = ["answers.jsonl", "metadata.json"];
+
+async function entriesFromDrop(dt) {
+  const out = [], errors = [];
+  const items = [...dt.items].map(i => (i.webkitGetAsEntry ? i.webkitGetAsEntry() : null)).filter(Boolean);
+  if (!items.length) return { out: [...dt.files].map(f => ({ path: f.name, file: f })), errors };
+  const fileOf = en => new Promise((res, rej) => en.file(res, rej));
+  async function walk(en, prefix) {
+    try {
+      if (en.isFile) {
+        // Only the two files we need are opened; other files in the folder are never touched.
+        if (WANTED.includes(en.name.toLowerCase())) out.push({ path: prefix + en.name, file: await fileOf(en) });
+      } else if (en.isDirectory) {
+        const path = prefix + en.name + "/";
+        // Ask for the two files by name first. This avoids listing the folder at all for a run folder.
+        const direct = await Promise.all(WANTED.map(n => new Promise(res => en.getFile(n, {}, e => res(e), () => res(null)))));
+        if (direct[0]) {
+          for (const fe of direct) if (fe) out.push({ path: path + fe.name, file: await fileOf(fe) });
+          return;
+        }
+        const rd = en.createReader();
+        let all = [];
+        for (;;) {
+          const batch = await new Promise((res, rej) => rd.readEntries(res, rej));
+          if (!batch.length) break;
+          all = all.concat(batch);
+        }
+        for (const c of all) await walk(c, path);
+      }
+    } catch (e) {
+      errors.push(prefix + en.name + ": " + (e.name || "") + " " + (e.message || ""));
+    }
+  }
+  for (const en of items) await walk(en, "");
+  return { out, errors };
+}
+
+/* ---------- state ---------- */
+const state = {
+  runs: [], runIdx: 0, tab: "overview", metric: "pass", errAsFail: false,
+  q: { cat: "", text: "", show: "", sortKey: "id", sortDir: 1 },
+  cmp: { a: "", b: "" },
+  rel: { off: new Set(), a: "", b: "", groupMap: {} },
+  ex: { variant: "", cat: "", qid: "", text: "", outcome: "", trial: "", page: 0 },
+};
+const PAGE = 25;
+const run = () => state.runs[state.runIdx];
+function resetFilters() {
+  state.q = { cat: "", text: "", show: "", sortKey: "id", sortDir: 1 };
+  state.cmp = { a: "", b: "" };
+  state.ex = { variant: "", cat: "", qid: "", text: "", outcome: "", trial: "", page: 0 };
+}
+function setMsg(t) { const el = $("#loadMsg"); if (el) el.textContent = t; }
+
+/* ---------- aggregate helpers ---------- */
+function cellStats(rows, metric, errAsFail) {
+  const get = METRICS[metric].get;
+  let k = 0, n = 0;
+  for (const r of rows) {
+    if (r.graded) { n++; if (get(r)) k++; } else if (errAsFail) n++;
+  }
+  const [lo, hi] = wilson(k, n);
+  return { k, n, p: n ? k / n : NaN, lo, hi };
+}
+
+function heat(p, goodHigh) {
+  if (isNaN(p)) return "transparent";
+  const hue = (goodHigh ? p : 1 - p) * 120;
+  return "hsl(" + hue.toFixed(0) + " 60% 50% / .22)";
+}
+
+function compare(rn, A, B, metric) {
+  const ma = rn.index.get(A), mb = rn.index.get(B), get = METRICS[metric].get;
+  const perQ = new Map(), perCat = new Map();
+  let nPairs = 0, a = 0, b = 0, onlyA = 0, onlyB = 0;
+  for (const [k, ra] of ma) {
+    const rb = mb.get(k);
+    if (!rb || !ra.graded || !rb.graded) continue;
+    const x = get(ra) ? 1 : 0, y = get(rb) ? 1 : 0;
+    nPairs++; a += x; b += y;
+    if (x && !y) onlyA++;
+    if (y && !x) onlyB++;
+    for (const [map, key] of [[perQ, ra.qid], [perCat, ra.cat]]) {
+      const o = map.get(key) || { sa: 0, sb: 0, n: 0 };
+      o.sa += x; o.sb += y; o.n++;
+      map.set(key, o);
+    }
+  }
+  const qs = [...perQ.entries()].map(([q, o]) => ({ q, a: o.sa / o.n, b: o.sb / o.n, d: (o.sb - o.sa) / o.n, n: o.n }));
+  const meanD = qs.length ? qs.reduce((s, o) => s + o.d, 0) / qs.length : 0;
+  const [lo, hi] = bootstrapCI(qs.map(o => o.d));
+  const higher = qs.filter(o => o.d > 1e-12).length, lower = qs.filter(o => o.d < -1e-12).length;
+  return {
+    nPairs, a, b, onlyA, onlyB, pPair: signTestP(onlyA, onlyB),
+    qs, meanD, lo, hi, higher, lower, tied: qs.length - higher - lower, pQ: signTestP(higher, lower),
+    cats: [...perCat.entries()].map(([c, o]) => ({ c, n: o.n, a: o.sa, b: o.sb })),
+  };
+}
+
+/* ---------- rendering ---------- */
+const TABS = [["overview", "Overview"], ["questions", "Questions"], ["compare", "Compare prompts"], ["reliability", "Reliability (pooled)"], ["explore", "Browse answers"], ["setup", "Setup & judge"]];
+
+function render() {
+  const tabs = $("#tabs"), sel = $("#runSel"), main = $("#main");
+  if (!state.runs.length) {
+    tabs.hidden = true; sel.hidden = true;
+    main.innerHTML = '<div class="drop" id="drop"><p><b>Drop a result folder here</b></p>' +
+      "<p>A folder like <code>results/20261101T053954_671012Z</code>, or the <code>results</code> folder itself to load every run in it.</p>" +
+      "<p>It needs <code>answers.jsonl</code>; <code>metadata.json</code> is optional but adds prompts, judge instructions and question order.</p>" +
+      "<p>Everything is read locally in your browser. Nothing is uploaded.</p></div>";
+    return;
+  }
+  sel.hidden = state.runs.length < 2;
+  sel.innerHTML = state.runs.map((r, i) => '<option value="' + i + '"' + (i === state.runIdx ? " selected" : "") + ">" + esc(r.name) + "</option>").join("");
+  tabs.hidden = false;
+  tabs.innerHTML = TABS.map(([id, label]) => '<button class="tab' + (state.tab === id ? " active" : "") + '" data-tab="' + id + '">' + label + "</button>").join("");
+  const fn = { overview: renderOverview, questions: renderQuestions, compare: renderCompare, reliability: renderReliability, explore: renderExplore, setup: renderSetup }[state.tab];
+  fn(main, run());
+}
+
+function toolbar(withErr) {
+  return '<div class="toolbar"><label>Metric <select id="metricSel">' +
+    Object.entries(METRICS).map(([k, m]) => '<option value="' + k + '"' + (state.metric === k ? " selected" : "") + ">" + m.label + "</option>").join("") +
+    "</select></label>" +
+    (withErr ? '<label><input type="checkbox" id="errChk"' + (state.errAsFail ? " checked" : "") + "> Count errors as failures (denominator = all attempted)</label>" : "") +
+    "</div>";
+}
+
+function bindToolbar() {
+  const m = $("#metricSel"); if (m) m.onchange = () => { state.metric = m.value; render(); };
+  const e = $("#errChk"); if (e) e.onchange = () => { state.errAsFail = e.checked; render(); };
+}
+
+/* ----- overview ----- */
+function renderOverview(main, rn) {
+  const md = rn.meta || {};
+  const attempted = rn.rows.length, graded = rn.rows.filter(r => r.graded).length;
+  const providers = {};
+  rn.rows.forEach(r => { if (r.provider) providers[r.provider] = (providers[r.provider] || 0) + 1; });
+  const card = (k, v) => '<div class="card"><div class="k">' + k + '</div><div class="v">' + esc(v) + "</div></div>";
+  let h = '<div class="cards" style="margin-top:14px">' +
+    card("Model", md.model || "(no metadata)") + card("Judge", (md.judge_model_effective || md.judge_model || "?") + " ×" + (md.judge_passes || "?")) +
+    card("Data set", md.data_dir || "?") + card("Questions × trials", rn.qOrder.length + " × " + (md.trials || "?")) +
+    card("Temperature", md.temperature ?? "?") + card("Rows graded / attempted", graded + " / " + attempted) +
+    card("Answering providers", Object.entries(providers).map(([p, n]) => p + " (" + n + ")").join(", ") || "?") + "</div>";
+
+  if (state.runs.length > 1) {
+    h += "<h2>All loaded runs</h2>" + '<div class="tablewrap"><table><tr><th>Run</th><th>Model</th><th>Data set</th><th class="num">Rows</th>' +
+      "<th>" + METRICS[state.metric].label + " per prompt (graded rows)</th></tr>" +
+      state.runs.map((r, i) => {
+        const cells = r.variants.map(v => {
+          const s = cellStats(r.rows.filter(x => x.variant === v), state.metric, false);
+          return esc(v) + " <b>" + (isNaN(s.p) ? "–" : pct(s.p)) + "</b>";
+        }).join(" &nbsp;·&nbsp; ");
+        return '<tr><td><span class="lnk" data-act="run" data-i="' + i + '">' + esc(r.name) + "</span></td><td>" + esc(r.meta?.model || "?") + "</td><td>" +
+          esc(r.meta?.data_dir || "?") + '</td><td class="num">' + r.rows.length + "</td><td>" + cells + "</td></tr>";
+      }).join("") + "</table></div>";
+  }
+
+  h += "<h2>" + METRICS[state.metric].label + " by category and prompt</h2>" + toolbar(true);
+  const goodHigh = METRICS[state.metric].good;
+  h += '<div class="tablewrap"><table><tr><th>Category</th>' + rn.variants.map(v => "<th>" + esc(v) + "</th>").join("") + "</tr>";
+  for (const cat of [...rn.cats, null]) {
+    h += "<tr><td><b>" + (cat === null ? "All" : esc(cat)) + "</b></td>";
+    for (const v of rn.variants) {
+      const rows = rn.rows.filter(r => r.variant === v && (cat === null || r.cat === cat));
+      const s = cellStats(rows, state.metric, state.errAsFail);
+      h += '<td class="heat" style="background:' + heat(s.p, goodHigh) + '"><b>' + (isNaN(s.p) ? "–" : pct(s.p)) + '</b><span class="sub">' + s.k + "/" + s.n +
+        (s.n ? " · 95% CI " + pct(s.lo, 0) + "–" + pct(s.hi, 0) : "") + '</span><div class="minibar"><i style="width:' + (isNaN(s.p) ? 0 : s.p * 100) + '%"></i></div></td>';
+    }
+    h += "</tr>";
+  }
+  h += '</table></div><p class="note">Intervals are Wilson 95% and treat every trial as independent, so they are narrower than reality. The Compare tab uses question-level resampling instead.</p>';
+
+  h += "<h2>Data quality</h2>" + '<div class="tablewrap"><table><tr><th>Prompt</th><th class="num">Attempted</th><th class="num">Graded</th><th class="num">Errors</th>' +
+    '<th class="num">Empty answers</th><th class="num">API errors</th><th class="num">Judge errors</th><th class="num">Recovered by retry</th></tr>';
+  let anyErr = false;
+  for (const v of rn.variants) {
+    const rs = rn.rows.filter(r => r.variant === v);
+    const cnt = t => rs.filter(r => r.errType === t).length;
+    const errs = rs.filter(r => r.error).length;
+    if (errs) anyErr = true;
+    h += "<tr><td>" + esc(v) + '</td><td class="num">' + rs.length + '</td><td class="num">' + rs.filter(r => r.graded).length + '</td><td class="num">' + errs +
+      '</td><td class="num">' + cnt("empty_answer") + '</td><td class="num">' + cnt("api_error") + '</td><td class="num">' + cnt("judge_error") +
+      '</td><td class="num">' + rs.filter(r => r.retried > 0 && !r.error).length + "</td></tr>";
+  }
+  h += "</table></div>";
+  if (anyErr) h += '<p class="note">Rows with errors are excluded from the rates above unless "Count errors as failures" is ticked. <span class="lnk" data-act="explore" data-outcome="error">Browse the error rows</span>.</p>';
+
+  const multi = rn.rows.filter(r => r.runs.length > 1);
+  const splits = multi.filter(r => r.split);
+  h += "<h2>Judge reliability</h2>";
+  if (!multi.length) h += '<p class="note">Only one judge pass per answer, so judge agreement cannot be measured.</p>';
+  else h += "<p>" + (md.judge_passes || multi[0].runs.length) + " judge passes per answer. The pass verdict was split on <b>" + splits.length + " of " + multi.length + "</b> answers (" +
+    pct(splits.length / multi.length) + '). <span class="lnk" data-act="explore" data-outcome="split">Browse the split answers</span>.</p>';
+  main.innerHTML = h;
+  bindToolbar();
+}
+
+/* ----- questions ----- */
+function renderQuestions(main, rn) {
+  const m = METRICS[state.metric], f = state.q;
+  const stats = new Map();
+  for (const q of rn.qOrder) {
+    if (!rn.qInfo.has(q)) continue;
+    const per = {};
+    for (const v of rn.variants) {
+      const rs = rn.rows.filter(r => r.qid === q && r.variant === v);
+      per[v] = cellStats(rs, state.metric, false);
+    }
+    stats.set(q, per);
+  }
+  const base = rn.variants[0];
+  let list = [...stats.keys()].map(q => {
+    const per = stats.get(q), ps = rn.variants.map(v => per[v].p).filter(p => !isNaN(p));
+    const spread = ps.length ? Math.max(...ps) - Math.min(...ps) : 0;
+    return { q, info: rn.qInfo.get(q), per, spread, allZero: ps.length && ps.every(p => p === 0) };
+  });
+  const t = f.text.trim().toLowerCase();
+  list = list.filter(o => (!f.cat || o.info.cat === f.cat) &&
+    (!t || o.q.toLowerCase().includes(t) || o.info.question.toLowerCase().includes(t)) &&
+    (f.show !== "differ" || o.spread > 1e-9) && (f.show !== "same" || o.spread <= 1e-9) && (f.show !== "zero" || o.allZero));
+  const key = f.sortKey;
+  list.sort((a, b) => {
+    let x, y;
+    if (key === "id") return f.sortDir * (rn.qOrder.indexOf(a.q) - rn.qOrder.indexOf(b.q));
+    if (key === "cat") { x = a.info.cat; y = b.info.cat; return f.sortDir * x.localeCompare(y) || rn.qOrder.indexOf(a.q) - rn.qOrder.indexOf(b.q); }
+    if (key === "spread") { x = a.spread; y = b.spread; }
+    else { x = a.per[key]?.p; y = b.per[key]?.p; if (isNaN(x)) x = -1; if (isNaN(y)) y = -1; }
+    return f.sortDir * (x - y) || rn.qOrder.indexOf(a.q) - rn.qOrder.indexOf(b.q);
+  });
+
+  let h = toolbar(false) + '<div class="toolbar"><label>Category <select id="qCat"><option value="">All</option>' +
+    rn.cats.map(c => '<option' + (f.cat === c ? " selected" : "") + ">" + esc(c) + "</option>").join("") + "</select></label>" +
+    '<label>Search <input type="search" id="qText" value="' + esc(f.text) + '" placeholder="id or question text"></label>' +
+    '<label>Show <select id="qShow">' + [["", "All questions"], ["differ", "Prompts differ"], ["same", "Same for every prompt"], ["zero", "0% for every prompt"]]
+      .map(([v, l]) => '<option value="' + v + '"' + (f.show === v ? " selected" : "") + ">" + l + "</option>").join("") + "</select></label>" +
+    "<span>" + list.length + " questions</span></div>";
+  const arrow = k => (f.sortKey === k ? (f.sortDir > 0 ? " ▲" : " ▼") : "");
+  h += '<div class="tablewrap"><table><tr><th class="sortable" data-sort="id">ID' + arrow("id") + '</th><th class="sortable" data-sort="cat">Category' + arrow("cat") + "</th><th>Question</th>" +
+    rn.variants.map(v => '<th class="sortable" data-sort="' + esc(v) + '">' + esc(v) + arrow(v) + "</th>").join("") +
+    '<th class="sortable" data-sort="spread">Spread' + arrow("spread") + "</th></tr>";
+  for (const o of list) {
+    h += '<tr><td><span class="lnk" data-act="explore" data-qid="' + esc(o.q) + '"><b>' + esc(o.q) + "</b></span></td><td>" + esc(o.info.cat) + '</td><td title="' + esc(o.info.question) + '">' +
+      esc(o.info.question.length > 90 ? o.info.question.slice(0, 90) + "…" : o.info.question) + "</td>";
+    for (const v of rn.variants) {
+      const s = o.per[v], b = o.per[base];
+      let d = "";
+      if (v !== base && s.n && b.n) d = " (" + (s.p - b.p >= 0 ? "+" : "−") + Math.abs((s.p - b.p) * 100).toFixed(0) + ")";
+      h += '<td class="heat" style="background:' + heat(s.p, m.good) + '"><b>' + s.k + "/" + s.n + '</b><span class="sub">' + (s.n ? pct(s.p, 0) : "no data") + d + "</span></td>";
+    }
+    h += '<td class="num">' + (o.spread * 100).toFixed(0) + " pts</td></tr>";
+  }
+  h += '</table></div><p class="note">Cells show trials counted for the chosen metric over graded trials. Numbers in brackets are the difference from <b>' + esc(base) + "</b> in percentage points. Click an ID to read the answers.</p>";
+  main.innerHTML = h + sourceBox(rn);
+  bindToolbar();
+  $("#qCat").onchange = e => { f.cat = e.target.value; render(); };
+  $("#qShow").onchange = e => { f.show = e.target.value; render(); };
+  const qt = $("#qText");
+  qt.oninput = e => { f.text = e.target.value; const pos = e.target.selectionStart; render(); const n = $("#qText"); n.focus(); n.setSelectionRange(pos, pos); };
+}
+
+/* ----- compare ----- */
+function renderCompare(main, rn) {
+  const vs = rn.variants;
+  if (vs.length < 2) { main.innerHTML = '<p class="note" style="margin-top:20px">Only one prompt variant in this run, so there is nothing to compare.</p>'; return; }
+  const c = state.cmp;
+  if (!vs.includes(c.a)) c.a = vs[0];
+  if (!vs.includes(c.b) || c.b === c.a) c.b = vs.find(v => v !== c.a);
+  const m = METRICS[state.metric], r = compare(rn, c.a, c.b, state.metric);
+  const opts = cur => vs.map(v => '<option' + (v === cur ? " selected" : "") + ">" + esc(v) + "</option>").join("");
+  let h = toolbar(false) + '<div class="toolbar"><label>Prompt A (reference) <select id="cmpA">' + opts(c.a) + "</select></label><label>Prompt B <select id=\"cmpB\">" + opts(c.b) + "</select></label></div>";
+  if (!r.nPairs) { main.innerHTML = h + '<p class="note">No question-trial pairs were graded in both prompts.</p>'; bindToolbar(); bindCompare(); return; }
+
+  const excludes0 = r.lo > 0 || r.hi < 0;
+  const dir = r.meanD > 0 ? "HIGHER" : "LOWER";
+  const good = excludes0 && ((r.meanD > 0) === m.good);
+  const verdict = excludes0
+    ? esc(c.b) + " has a reliably <b>" + dir + "</b> " + m.short + " rate than " + esc(c.a) + " (the bootstrap interval excludes 0)."
+    : "<b>No reliable difference</b> detected (the bootstrap interval includes 0).";
+  h += '<div class="verdict ' + (excludes0 ? (good ? "good" : "bad") : "") + '"><b>' + m.label + ":</b> " + esc(c.a) + " " + r.a + "/" + r.nPairs + " (" + pct(r.a / r.nPairs) + ") vs " + esc(c.b) + " " + r.b + "/" + r.nPairs + " (" + pct(r.b / r.nPairs) +
+    ")<br>By question (" + r.qs.length + " questions, equal weight): " + esc(c.b) + " − " + esc(c.a) + " = <b>" + pts(r.meanD) + "</b>, 95% bootstrap CI [" + pts(r.lo) + ", " + pts(r.hi) + "]<br>" + verdict + "</div>";
+  h += '<div class="cards"><div class="card"><div class="k">Matched question-trial pairs</div><div class="v">' + r.nPairs + '</div></div>' +
+    '<div class="card"><div class="k">Only ' + esc(c.a) + "</div><div class=\"v\">" + r.onlyA + '</div></div><div class="card"><div class="k">Only ' + esc(c.b) + '</div><div class="v">' + r.onlyB + "</div></div>" +
+    '<div class="card"><div class="k">Pair sign test (overstates certainty)</div><div class="v">p = ' + r.pPair.toFixed(3) + "</div></div>" +
+    '<div class="card"><div class="k">Questions: B higher / lower / tied</div><div class="v">' + r.higher + " / " + r.lower + " / " + r.tied + '</div></div>' +
+    '<div class="card"><div class="k">Question-level sign test</div><div class="v">p = ' + r.pQ.toFixed(3) + "</div></div></div>";
+  h += '<p class="note">"Only A" counts pairs where A has the outcome and B does not. Pairs are the same question and trial number, graded in both prompts. The question-level figures are the trustworthy ones, because the trials of one question are not independent.</p>';
+
+  h += "<h2>By category (matched pairs)</h2>" + '<div class="tablewrap"><table><tr><th>Category</th><th class="num">Pairs</th><th class="num">' + esc(c.a) + '</th><th class="num">' + esc(c.b) + '</th><th class="num">Difference</th></tr>' +
+    r.cats.map(o => "<tr><td>" + esc(o.c) + '</td><td class="num">' + o.n + '</td><td class="num">' + o.a + "/" + o.n + " (" + pct(o.a / o.n) + ')</td><td class="num">' + o.b + "/" + o.n + " (" + pct(o.b / o.n) +
+      ')</td><td class="num">' + pts((o.b - o.a) / o.n) + "</td></tr>").join("") + "</table></div>";
+
+  const movers = r.qs.filter(o => Math.abs(o.d) > 1e-12).sort((a, b) => Math.abs(b.d) - Math.abs(a.d) || natKey(a.q).localeCompare(natKey(b.q))).slice(0, 25);
+  h += "<h2>Questions that moved most</h2>";
+  if (!movers.length) h += '<p class="note">No question differs between the two prompts.</p>';
+  else h += '<div class="tablewrap"><table><tr><th>ID</th><th>Category</th><th>Question</th><th class="num">' + esc(c.a) + '</th><th class="num">' + esc(c.b) + '</th><th class="num">Change</th></tr>' +
+    movers.map(o => {
+      const info = rn.qInfo.get(o.q);
+      return '<tr><td><span class="lnk" data-act="explore" data-qid="' + esc(o.q) + '"><b>' + esc(o.q) + "</b></span></td><td>" + esc(info.cat) + "</td><td>" + esc(info.question.length > 80 ? info.question.slice(0, 80) + "…" : info.question) +
+        '</td><td class="num">' + pct(o.a, 0) + '</td><td class="num">' + pct(o.b, 0) + '</td><td class="num">' + pts(o.d, 0) + "</td></tr>";
+    }).join("") + "</table></div>";
+  main.innerHTML = h;
+  bindToolbar(); bindCompare();
+}
+function bindCompare() {
+  const a = $("#cmpA"), b = $("#cmpB");
+  if (a) a.onchange = () => { state.cmp.a = a.value; render(); };
+  if (b) b.onchange = () => { state.cmp.b = b.value; render(); };
+}
+
+/* ----- reliability (pooled across runs) ----- */
+const GROUPS = { answer: "Should answer", hold: "Should hold back", correct: "Should correct" };
+const DEFAULT_GROUP = { answerable: "answer", knowable_control: "answer", missing_information: "hold", unknowable: "hold", false_premise: "correct", false_premise_known: "correct" };
+const OUTCOMES = [["reliable", "Reliable", "var(--good)"], ["bold", "Too bold", "var(--bad)"], ["cautious", "Too cautious", "var(--warn)"], ["other", "Other failure", "var(--muted)"]];
+const OUT_IDS = OUTCOMES.map(o => o[0]);
+const groupOf = cat => state.rel.groupMap[cat] ?? DEFAULT_GROUP[cat] ?? "skip";
+// Precedence for an unreliable answer: abstention flag first, then unsupported claim, otherwise unflagged.
+const outcomeOf = r => (r.pass ? "reliable" : r.abst ? "cautious" : r.unsup ? "bold" : "other");
+const avg = xs => (xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : 0);
+function pctl(arr) {
+  const s = Float64Array.from(arr).sort(), n = s.length;
+  return [s[Math.floor(0.025 * n)], s[Math.min(n - 1, Math.floor(0.975 * n))]];
+}
+
+function relAnalysis(runs, A, B, R = 5000) {
+  const strata = [], smap = new Map(), rng = mulberry32(0);
+  runs.forEach((rn, ri) => {
+    const ma = rn.index.get(A), mb = rn.index.get(B);
+    if (!ma || !mb) return;
+    const perQ = new Map();
+    for (const [k, ra] of ma) {
+      const rb = mb.get(k);
+      if (!rb || !ra.graded || !rb.graded) continue;
+      const g = groupOf(ra.cat);
+      if (g === "skip") continue;
+      let o = perQ.get(ra.qid);
+      if (!o) { o = { g, n: 0, a: {}, b: {} }; OUT_IDS.forEach(id => { o.a[id] = 0; o.b[id] = 0; }); perQ.set(ra.qid, o); }
+      o.n++; o.a[outcomeOf(ra)]++; o.b[outcomeOf(rb)]++;
+    }
+    for (const [q, o] of perQ) {
+      const key = ri + "|" + o.g;
+      let s = smap.get(key);
+      if (!s) { s = { ri, run: rn, group: o.g, qs: [] }; smap.set(key, s); strata.push(s); }
+      const a = {}, b = {}, d = {};
+      OUT_IDS.forEach(id => { a[id] = o.a[id] / o.n; b[id] = o.b[id] / o.n; d[id] = b[id] - a[id]; });
+      s.qs.push({ q, a, b, d, da: OUT_IDS.map(id => d[id]) });
+    }
+  });
+  if (!strata.length) return null;
+
+  const lv = strata.map(s => {
+    const a = {}, b = {}, d = {};
+    OUT_IDS.forEach(id => { a[id] = avg(s.qs.map(x => x.a[id])); b[id] = avg(s.qs.map(x => x.b[id])); d[id] = b[id] - a[id]; });
+    return { a, b, d };
+  });
+  // boot[stratum][outcome] = bootstrap distribution of that stratum's mean change (questions resampled within the stratum)
+  const boot = strata.map(() => OUT_IDS.map(() => new Float64Array(R)));
+  for (let r = 0; r < R; r++) {
+    strata.forEach((s, si) => {
+      const n = s.qs.length, sums = new Float64Array(OUT_IDS.length);
+      for (let i = 0; i < n; i++) { const da = s.qs[Math.floor(rng() * n)].da; for (let k = 0; k < sums.length; k++) sums[k] += da[k]; }
+      for (let k = 0; k < sums.length; k++) boot[si][k][r] = sums[k] / n;
+    });
+  }
+  const aggArr = (idxs, k) => {
+    const arr = new Float64Array(R);
+    for (const i of idxs) { const src = boot[i][k]; for (let r = 0; r < R; r++) arr[r] += src[r]; }
+    for (let r = 0; r < R; r++) arr[r] /= idxs.length;
+    return arr;
+  };
+  const summ = idxs => {
+    const a = {}, b = {}, d = {}, ci = {};
+    OUT_IDS.forEach((id, k) => {
+      a[id] = avg(idxs.map(i => lv[i].a[id])); b[id] = avg(idxs.map(i => lv[i].b[id])); d[id] = b[id] - a[id];
+      ci[id] = pctl(aggArr(idxs, k));
+    });
+    return { a, b, d, ci };
+  };
+  const all = strata.map((_, i) => i);
+  const runIdxs = [...new Set(strata.map(s => s.ri))];
+  const runsAgg = runIdxs.map(ri => { const idxs = all.filter(i => strata[i].ri === ri); return { ri, run: runs[ri], idxs, sum: summ(idxs) }; });
+  const groups = Object.keys(GROUPS).map(g => ({ g, idxs: all.filter(i => strata[i].group === g) })).filter(o => o.idxs.length)
+    .map(o => ({ ...o, n: o.idxs.reduce((s, i) => s + strata[i].qs.length, 0), sum: summ(o.idxs) }));
+  const pairs = [];
+  for (let x = 0; x < runsAgg.length; x++) for (let y = x + 1; y < runsAgg.length; y++) {
+    const ax = aggArr(runsAgg[x].idxs, 0), ay = aggArr(runsAgg[y].idxs, 0), diff = new Float64Array(R);
+    for (let r = 0; r < R; r++) diff[r] = ax[r] - ay[r];
+    pairs.push({ x: runsAgg[x], y: runsAgg[y], d: runsAgg[x].sum.d.reliable - runsAgg[y].sum.d.reliable, ci: pctl(diff) });
+  }
+  return {
+    strata: strata.map((s, i) => ({ ri: s.ri, run: s.run, group: s.group, n: s.qs.length, sum: summ([i]) })),
+    runs: runsAgg, groups, pooled: summ(all), pairs,
+    nQuestions: strata.reduce((s, x) => s + x.qs.length, 0),
+  };
+}
+
+function fmtDelta(d, ci, goodPositive) {
+  const sig = ci && (ci[0] > 0 || ci[1] < 0);
+  const col = sig ? ((d > 0) === goodPositive ? "var(--good)" : "var(--bad)") : "inherit";
+  return '<b style="color:' + col + '">' + pts(d) + "</b>" + (ci ? '<span class="sub">[' + pts(ci[0]) + ", " + pts(ci[1]) + "]</span>" : "");
+}
+
+function forestSvg(rows) {
+  const w = 760, lw = 290, pw = w - lw - 30, rh = 26, h = rows.length * rh + 40;
+  let m = 0.2;
+  for (const r of rows) m = Math.max(m, Math.abs(r.s.ci.reliable[0]), Math.abs(r.s.ci.reliable[1]));
+  m = Math.ceil(m * 10) / 10;
+  const x = v => lw + (v + m) / (2 * m) * pw;
+  let g = "";
+  for (const t of [-m, -m / 2, 0, m / 2, m]) {
+    g += '<line x1="' + x(t) + '" x2="' + x(t) + '" y1="4" y2="' + (h - 28) + '" stroke="var(--line)"' + (t === 0 ? ' stroke-dasharray="4 3" stroke-width="1.5"' : "") + "/>" +
+      '<text x="' + x(t) + '" y="' + (h - 12) + '" text-anchor="middle" font-size="11" fill="var(--muted)">' + (t > 0 ? "+" : t < 0 ? "−" : "") + Math.abs(t * 100).toFixed(0) + "</text>";
+  }
+  rows.forEach((r, i) => {
+    const cy = 4 + i * rh + rh / 2, c = r.s.ci.reliable, d = r.s.d.reliable;
+    g += '<text x="' + (r.indent ? 18 : 4) + '" y="' + (cy + 4) + '" font-size="12" fill="var(--ink)"' + (r.bold ? ' font-weight="700"' : "") + ">" + esc(r.label) + "</text>" +
+      '<line x1="' + x(c[0]) + '" x2="' + x(c[1]) + '" y1="' + cy + '" y2="' + cy + '" stroke="var(--accent)" stroke-width="' + (r.bold ? 3 : 2) + '"/>' +
+      '<circle cx="' + x(d) + '" cy="' + cy + '" r="' + (r.bold ? 5.5 : 4) + '" fill="var(--accent)"/>';
+  });
+  return '<svg viewBox="0 0 ' + w + " " + h + '" style="width:100%;max-width:' + w + 'px;display:block"><title>Change in reliable rate, B minus A (percentage points)</title>' + g + "</svg>";
+}
+
+function stackBar(levels) {
+  return '<div class="stack">' + OUTCOMES.map(([id, label, col]) => levels[id] > 0
+    ? '<i style="width:' + (levels[id] * 100) + "%;background:" + col + '" title="' + label + " " + pct(levels[id]) + '">' + (levels[id] >= 0.06 ? pct(levels[id], 0) : "") + "</i>" : "").join("") + "</div>";
+}
+
+function renderReliability(main) {
+  const rl = state.rel, sel = state.runs.filter(r => !rl.off.has(r.name));
+  let h = '<p class="note" style="margin-top:14px">Is prompt B more <b>reliable</b> than prompt A? An answer is reliable if the judge passed it. The result is pooled across the runs you tick, with every (run, question group) block weighted equally, so no dataset or question mix dominates.</p>';
+  h += "<h3>Runs to pool</h3>" + state.runs.map((r, i) => '<label style="display:block"><input type="checkbox" data-relrun="' + i + '"' + (rl.off.has(r.name) ? "" : " checked") + "> " + esc(r.name) +
+    ' <span class="note">' + esc(r.meta?.model || "?") + " · " + esc(r.meta?.data_dir || "?") + " · " + r.qOrder.length + " questions</span></label>").join("");
+  if (!sel.length) { main.innerHTML = h; bindRel(); return; }
+
+  const models = [...new Set(sel.map(r => (r.meta?.model || "unknown") + " (reasoning: " + (r.meta?.reasoning || "default") + ")"))];
+  if (models.length > 1) h += '<div class="warnbox">The selected runs differ in model or reasoning setting (' + esc(models.join("; ")) + "). Pooling them mixes those effects with prompt effects. Untick runs until only one remains.</div>";
+  const dirs = sel.map(r => (r.meta?.model || "") + "|" + (r.meta?.data_dir || ""));
+  if (new Set(dirs).size < dirs.length) h += '<div class="warnbox">Two selected runs have the same model and data set, so their questions will be counted twice.</div>';
+
+  const vs = sel[0].variants.filter(v => sel.every(r => r.variants.includes(v)));
+  if (vs.length < 2) { main.innerHTML = h + '<p class="note">The selected runs share fewer than two prompt variants.</p>'; bindRel(); return; }
+  if (!vs.includes(rl.a)) rl.a = vs[0];
+  if (!vs.includes(rl.b) || rl.b === rl.a) rl.b = vs.find(v => v !== rl.a);
+  const opts = cur => vs.map(v => "<option" + (v === cur ? " selected" : "") + ">" + esc(v) + "</option>").join("");
+  const cats = [...new Set(sel.flatMap(r => r.cats))];
+  h += '<div class="toolbar"><label>Prompt A (reference) <select id="relA">' + opts(rl.a) + '</select></label><label>Prompt B <select id="relB">' + opts(rl.b) + "</select></label></div>" +
+    '<details><summary class="lnk">Which question categories belong to which group (' + cats.length + " categories)</summary><div class=\"toolbar\">" +
+    cats.map(c => "<label>" + esc(c) + ' <select data-relcat="' + esc(c) + '">' + [...Object.entries(GROUPS), ["skip", "(exclude)"]].map(([v, l]) => '<option value="' + v + '"' + (groupOf(c) === v ? " selected" : "") + ">" + l + "</option>").join("") + "</select></label>").join("") + "</div></details>";
+
+  const res = relAnalysis(sel, rl.a, rl.b);
+  if (!res) { main.innerHTML = h + '<p class="note">No question-trial pairs were graded in both prompts for the included categories.</p>'; bindRel(); return; }
+  const P = res.pooled, rel = P.d.reliable, ci = P.ci.reliable, sig = ci[0] > 0 || ci[1] < 0;
+  const dis = res.pairs.filter(p => p.ci[0] > 0 || p.ci[1] < 0);
+  const runsOpposite = res.runs.length > 1 && res.runs.some(r => r.sum.d.reliable > 0) && res.runs.some(r => r.sum.d.reliable < 0);
+
+  h += '<div class="verdict ' + (sig ? (rel > 0 ? "good" : "bad") : "") + '"><b>Pooled reliability:</b> ' + esc(rl.a) + " " + pct(P.a.reliable) + " → " + esc(rl.b) + " " + pct(P.b.reliable) +
+    "<br>Change: <b>" + pts(rel) + "</b>, 95% bootstrap CI [" + pts(ci[0]) + ", " + pts(ci[1]) + "] over " + res.nQuestions + " question blocks in " + res.strata.length + " strata.<br>" +
+    (sig ? esc(rl.b) + " is reliably <b>" + (rel > 0 ? "more" : "less") + " reliable</b> than " + esc(rl.a) + " on average." : "<b>No reliable difference</b> on average (the interval includes 0).") + "</div>";
+  if (dis.length) h += '<div class="warnbox"><b>The runs disagree.</b> ' + dis.map(p => esc(p.x.run.name) + " vs " + esc(p.y.run.name) + ": " + pts(p.d) + " [" + pts(p.ci[0]) + ", " + pts(p.ci[1]) + "]").join("; ") +
+    ". The effect depends on context, so do not read the pooled number as one effect.</div>";
+  else if (runsOpposite) h += '<p class="note">The runs\' effects point in opposite directions, though not reliably so. Check the forest plot before trusting the pooled number.</p>';
+
+  h += "<h2>Where the change comes from</h2>";
+  const rows = [];
+  for (const rr of res.runs) {
+    for (const s of res.strata.filter(x => x.ri === rr.ri)) rows.push({ label: GROUPS[s.group] + " (n=" + s.n + ")", s: s.sum, indent: true });
+    rows.push({ label: rr.run.name, s: rr.sum, bold: true });
+  }
+  rows.push({ label: "Pooled, equal weight", s: P, bold: true });
+  h += forestSvg(rows) + '<p class="note">Each line is B minus A in reliable rate, in percentage points, with a 95% interval. To the right of the dashed line, B is more reliable. Indented lines are single blocks, bold lines combine them.</p>';
+
+  h += "<h2>Why answers are unreliable</h2>" + '<div class="two"><div><h3>' + esc(rl.a) + "</h3>" + stackBar(P.a) + "</div><div><h3>" + esc(rl.b) + "</h3>" + stackBar(P.b) + "</div></div>";
+  h += '<div class="tablewrap" style="margin-top:12px"><table><tr><th>Outcome</th><th class="num">' + esc(rl.a) + '</th><th class="num">' + esc(rl.b) + "</th><th>Change (B − A)</th></tr>" +
+    OUTCOMES.map(([id, label, col]) => '<tr><td><span class="chip" style="color:' + col + '">●</span>' + label + '</td><td class="num">' + pct(P.a[id]) + '</td><td class="num">' + pct(P.b[id]) + "</td><td>" + fmtDelta(P.d[id], P.ci[id], id === "reliable") + "</td></tr>").join("") + "</table></div>";
+  h += '<p class="note"><b>Too cautious</b>: the judge flagged an unnecessary abstention (refused, or said the source lacked an answer it had). <b>Too bold</b>: unsupported claim without abstention (wrong answer, fabrication, or went along with a false premise). <b>Other</b>: failed with neither flag. When both flags are set, the answer counts as too cautious.</p>';
+
+  h += "<h2>By question group</h2>" + '<div class="tablewrap"><table><tr><th>Group</th><th class="num">Questions</th><th class="num">' + esc(rl.a) + " reliable</th><th class=\"num\">" + esc(rl.b) + " reliable</th><th>Change in reliable</th><th>Too bold</th><th>Too cautious</th><th>Other</th></tr>" +
+    res.groups.map(o => "<tr><td><b>" + GROUPS[o.g] + '</b></td><td class="num">' + o.n + '</td><td class="num">' + pct(o.sum.a.reliable) + '</td><td class="num">' + pct(o.sum.b.reliable) + "</td><td>" + fmtDelta(o.sum.d.reliable, o.sum.ci.reliable, true) +
+      "</td><td>" + fmtDelta(o.sum.d.bold, o.sum.ci.bold, false) + "</td><td>" + fmtDelta(o.sum.d.cautious, o.sum.ci.cautious, false) + "</td><td>" + fmtDelta(o.sum.d.other, o.sum.ci.other, false) + "</td></tr>").join("") + "</table></div>";
+  h += '<p class="note">Method: for each question, the reliable rate over trials graded in both prompts. Within each block (run × group) the mean change over questions. Blocks are averaged with equal weight. Intervals resample questions within each block (5000 times). Rows with errors are excluded.</p>';
+  main.innerHTML = h;
+  bindRel();
+}
+
+function bindRel() {
+  const rl = state.rel;
+  document.querySelectorAll("[data-relrun]").forEach(el => {
+    el.onchange = () => { const name = state.runs[+el.dataset.relrun].name; if (el.checked) rl.off.delete(name); else rl.off.add(name); render(); };
+  });
+  const a = $("#relA"), b = $("#relB");
+  if (a) a.onchange = () => { rl.a = a.value; render(); };
+  if (b) b.onchange = () => { rl.b = b.value; render(); };
+  document.querySelectorAll("[data-relcat]").forEach(el => { el.onchange = () => { rl.groupMap[el.dataset.relcat] = el.value; render(); }; });
+}
+
+/* ----- browse answers ----- */
+function matchesOutcome(r, o) {
+  switch (o) {
+    case "pass": return r.pass === true;
+    case "fail": return r.graded && !r.pass;
+    case "unsup": return r.unsup;
+    case "abst": return r.abst;
+    case "error": return !!r.error;
+    case "split": return r.split;
+    case "retried": return r.retried > 0;
+    default: return true;
+  }
+}
+
+function filteredRows(rn) {
+  const f = state.ex, t = f.text.trim().toLowerCase(), qid = f.qid.trim().toLowerCase();
+  return rn.rows.filter(r => (!f.variant || r.variant === f.variant) && (!f.cat || r.cat === f.cat) && (!f.trial || String(r.trial) === f.trial) &&
+    (!qid || r.qid.toLowerCase().includes(qid)) && matchesOutcome(r, f.outcome) &&
+    (!t || r.answer.toLowerCase().includes(t) || r.question.toLowerCase().includes(t) || (r.grade && String(r.grade.reason).toLowerCase().includes(t))));
+}
+
+function renderExplore(main, rn) {
+  const f = state.ex;
+  const trials = [...new Set(rn.rows.map(r => r.trial))].sort((a, b) => a - b);
+  const sel = (id, label, cur, items) => '<label>' + label + ' <select id="' + id + '">' + items.map(([v, l]) => '<option value="' + esc(v) + '"' + (cur === v ? " selected" : "") + ">" + esc(l) + "</option>").join("") + "</select></label>";
+  main.innerHTML = '<div class="toolbar" style="margin-top:6px">' +
+    sel("exVar", "Prompt", f.variant, [["", "All"], ...rn.variants.map(v => [v, v])]) +
+    sel("exCat", "Category", f.cat, [["", "All"], ...rn.cats.map(c => [c, c])]) +
+    sel("exTrial", "Trial", f.trial, [["", "All"], ...trials.map(t => [String(t), String(t)])]) +
+    sel("exOut", "Outcome", f.outcome, [["", "Any"], ["pass", "Passed"], ["fail", "Failed (graded)"], ["unsup", "Unsupported claim"], ["abst", "Unnecessary abstention"],
+      ["error", "Error (not graded)"], ["split", "Judge passes disagreed"], ["retried", "Needed an empty-answer retry"]]) +
+    '<label>Question ID <input type="text" id="exQid" size="6" value="' + esc(f.qid) + '"></label>' +
+    '<label>Text search <input type="search" id="exText" value="' + esc(f.text) + '" placeholder="answer, question or judge reason"></label>' +
+    "</div>" +
+    '<div id="exInfo" class="pager"></div><div id="exList"></div><div id="exInfo2" class="pager"></div>' + sourceBox(rn);
+  const bind = (id, key, ev = "onchange") => { $(id)[ev] = e => { f[key] = e.target.value; f.page = 0; updateList(); }; };
+  bind("#exVar", "variant"); bind("#exCat", "cat"); bind("#exTrial", "trial"); bind("#exOut", "outcome");
+  bind("#exQid", "qid", "oninput"); bind("#exText", "text", "oninput");
+  updateList();
+}
+
+function sourceBox(rn) {
+  const src = rn.meta && rn.meta.source;
+  if (src) return "<h2>Source packet</h2><textarea class=\"packet\" readonly>" + esc(src) + "</textarea>";
+  return rn.meta ? '<p class="note">This run had no source packet (closed-book).</p>' : "";
+}
+
+function verdictCell(r) {
+  if (r.error) return '<span class="chip err">ERROR</span><span class="chip">' + esc(r.errType) + '</span><div class="txt">' + esc(r.error) + "</div>";
+  let h = '<span class="chip ' + (r.pass ? "pass" : "fail") + '">' + (r.pass ? "PASS" : "FAIL") + "</span>" +
+    (r.unsup ? '<span class="chip warn">unsupported claim</span>' : "") + (r.abst ? '<span class="chip warn">unnecessary abstention</span>' : "") +
+    '<div class="txt">' + esc(r.grade.reason) + "</div>";
+  if (r.runs.length > 1) {
+    h += '<div class="sub" style="margin-top:6px">Judge passes' + (r.split ? " (disagreed)" : "") + ": " +
+      r.runs.map(x => '<span class="chip ' + (x.grade && x.grade.pass ? "pass" : "fail") + '">' + (x.grade && x.grade.pass ? "yes" : "no") + "</span>").join("") + "</div>";
+    if (r.split) h += r.runs.map((x, i) => '<div class="txt sub">' + (i + 1) + ". " + esc(x.grade ? x.grade.reason : x.raw) + "</div>").join("");
+  }
+  return h;
+}
+
+function updateList() {
+  const rn = run(), f = state.ex, rows = filteredRows(rn);
+  const pages = Math.max(1, Math.ceil(rows.length / PAGE));
+  if (f.page >= pages) f.page = pages - 1;
+  const slice = rows.slice(f.page * PAGE, (f.page + 1) * PAGE);
+  const pager = '<span>' + rows.length + " answers" + (pages > 1 ? " · page " + (f.page + 1) + " of " + pages : "") + "</span>" +
+    (pages > 1 ? '<button data-act="page" data-d="-1"' + (f.page === 0 ? " disabled" : "") + '>‹ Prev</button><button data-act="page" data-d="1"' + (f.page >= pages - 1 ? " disabled" : "") + ">Next ›</button>" : "");
+  $("#exInfo").innerHTML = pager; $("#exInfo2").innerHTML = pages > 1 ? pager : "";
+  $("#exList").innerHTML = slice.length ? '<div class="tablewrap"><table class="qa"><colgroup><col style="width:7%"><col style="width:10%"><col style="width:16%"><col style="width:25%"><col style="width:19%"><col style="width:23%"></colgroup>' +
+    "<tr><th>Item</th><th>Prompt</th><th>Question</th><th>Answer</th><th>Ground truth</th><th>Judge verdict</th></tr>" +
+    slice.map(r => "<tr><td><b>" + esc(r.qid) + '</b><span class="sub">' + esc(r.cat) + '</span><span class="sub">trial ' + esc(r.trial) + '</span><span class="sub">' + esc(r.provider) +
+      (r.retried ? " · " + r.retried + " empty before" : "") + "</span></td><td><b>" + esc(r.variant) + '</b></td><td><div class="txt">' + esc(r.question) + '</div></td><td><div class="txt answer">' + (r.answer ? esc(r.answer) : "(empty)") +
+      '</div></td><td><div class="txt">' + esc(r.gt) + "</div></td><td>" + verdictCell(r) + "</td></tr>").join("") + "</table></div>"
+    : '<p class="note">No answers match these filters.</p>';
+}
+
+/* ----- setup ----- */
+function renderSetup(main, rn) {
+  const md = rn.meta;
+  if (!md) { main.innerHTML = '<p class="note" style="margin-top:20px">No metadata.json was loaded with this run, so prompts and judge instructions are unavailable.</p>'; return; }
+  const skip = new Set(["prompts", "judge_instructions", "cases", "source"]);
+  let h = "<h2>Settings</h2>" + '<div class="tablewrap"><table>' + Object.entries(md).filter(([k]) => !skip.has(k))
+    .map(([k, v]) => '<tr><td style="width:220px"><b>' + esc(k) + "</b></td><td>" + esc(v === null ? "–" : typeof v === "object" ? JSON.stringify(v) : v) + "</td></tr>").join("") + "</table></div>";
+  h += "<h2>Prompts</h2>" + '<div class="two">' + Object.entries(md.prompts || {}).map(([k, v]) => "<div><h3>" + esc(k) + '</h3><pre class="block">' + esc(v) + "</pre></div>").join("") + "</div>";
+  h += "<h2>Judge instructions</h2><pre class=\"block\">" + esc(md.judge_instructions || "") + "</pre>";
+  if (md.source) h += "<h2>Source packet</h2><pre class=\"block\">" + esc(md.source) + "</pre>";
+  main.innerHTML = h;
+}
+
+/* ---------- events ---------- */
+function goExplore(patch) {
+  state.ex = { variant: "", cat: "", qid: "", text: "", outcome: "", trial: "", page: 0, ...patch };
+  state.tab = "explore";
+  render();
+  window.scrollTo(0, 0);
+}
+
+function init() {
+  $("#btnFolder").onclick = () => $("#dirIn").click();
+  $("#btnFiles").onclick = () => $("#fileIn").click();
+  $("#dirIn").onchange = e => { loadEntries([...e.target.files].map(f => ({ path: f.webkitRelativePath || f.name, file: f }))); e.target.value = ""; };
+  $("#fileIn").onchange = e => { loadEntries([...e.target.files].map(f => ({ path: f.name, file: f }))); e.target.value = ""; };
+  $("#runSel").onchange = e => { state.runIdx = +e.target.value; resetFilters(); render(); };
+  document.addEventListener("click", e => {
+    const t = e.target.closest("[data-tab],[data-act],[data-sort]");
+    if (!t) return;
+    if (t.dataset.tab) { state.tab = t.dataset.tab; render(); return; }
+    if (t.dataset.sort) {
+      const k = t.dataset.sort, q = state.q;
+      if (q.sortKey === k) q.sortDir = -q.sortDir; else { q.sortKey = k; q.sortDir = k === "id" || k === "cat" ? 1 : -1; }
+      render(); return;
+    }
+    const a = t.dataset.act;
+    if (a === "explore") goExplore({ qid: t.dataset.qid || "", outcome: t.dataset.outcome || "" });
+    else if (a === "run") { state.runIdx = +t.dataset.i; resetFilters(); render(); }
+    else if (a === "page") { state.ex.page += +t.dataset.d; updateList(); window.scrollTo(0, 0); }
+  });
+  for (const ev of ["dragenter", "dragover"]) document.addEventListener(ev, e => { e.preventDefault(); const d = $("#drop"); if (d) d.classList.add("over"); });
+  document.addEventListener("dragleave", () => { const d = $("#drop"); if (d) d.classList.remove("over"); });
+  document.addEventListener("drop", async e => {
+    e.preventDefault();
+    setMsg("Reading…");
+    try {
+      const { out, errors } = await entriesFromDrop(e.dataTransfer);
+      await loadEntries(out);
+      if (errors.length) setMsg($("#loadMsg").textContent + " Problems: " + errors.join("; ") + ' (try "Open result folder…" instead)');
+    } catch (err) {
+      setMsg("Could not read the drop (" + err.name + "). Use \"Open result folder…\" instead.");
+    }
+  });
+  render();
+}
+if (typeof document !== "undefined" && document.readyState !== undefined) init();
+</script>
+</body>
+</html>

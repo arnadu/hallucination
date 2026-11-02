@@ -1,0 +1,11 @@
+Read the source packet and answer the question using only the information it contains.
+If the source packet does not contain the answer, say so plainly instead of guessing or inferring one.
+If the question assumes something the source does not support, point that out instead of going along with it.
+
+SOURCE PACKET
+{source}
+
+QUESTION
+{question}
+
+ANSWER

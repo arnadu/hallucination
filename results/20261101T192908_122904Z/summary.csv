@@ -1,0 +1,13 @@
+variant,category,attempted,graded,errors,empty_answers,recovered_by_retry,passed,pass_rate,pass_rate_errors_as_fail,unsupported_claims,unsupported_claim_rate,unnecessary_abstentions
+baseline,all,305,305,0,0,0,291,0.9540983606557377,0.9540983606557377,12,0.03934426229508197,0
+baseline,answerable,80,80,0,0,0,80,1.0,1.0,0,0.0,0
+baseline,false_premise,95,95,0,0,0,95,1.0,1.0,0,0.0,0
+baseline,missing_information,130,130,0,0,0,116,0.8923076923076924,0.8923076923076924,12,0.09230769230769231,0
+do_not_hallucinate,all,305,305,0,0,0,295,0.9672131147540983,0.9672131147540983,8,0.02622950819672131,0
+do_not_hallucinate,answerable,80,80,0,0,0,79,0.9875,0.9875,0,0.0,0
+do_not_hallucinate,false_premise,95,95,0,0,0,94,0.9894736842105263,0.9894736842105263,1,0.010526315789473684,0
+do_not_hallucinate,missing_information,130,130,0,0,0,122,0.9384615384615385,0.9384615384615385,7,0.05384615384615385,0
+explicit_instructions,all,305,305,0,0,0,301,0.9868852459016394,0.9868852459016394,2,0.006557377049180328,0
+explicit_instructions,answerable,80,80,0,0,0,78,0.975,0.975,0,0.0,0
+explicit_instructions,false_premise,95,95,0,0,0,95,1.0,1.0,0,0.0,0
+explicit_instructions,missing_information,130,130,0,0,0,128,0.9846153846153847,0.9846153846153847,2,0.015384615384615385,0
