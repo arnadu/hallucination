@@ -42,3 +42,7 @@ The run folders for each model and reasoning setting are listed in the report. D
 ## Notes
 
 All names, companies and products in the question sets are fictional. Questions and ground truths were written by an LLM assistant and have not been independently verified.
+
+## License
+
+MIT, see [LICENSE](LICENSE). This covers the code, question sets and results in this repository.
